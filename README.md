@@ -1,8 +1,11 @@
 # nUrveSensor
 # Urban Mobile Sensors, LLC
-+---------------------------------------------------------------------------+
-|   urbanmobilesensors.com | @urbansensors | info@urbanmobilesensors.com    |
-+===========================================================================+
+
+Contact Information:
+w: urbanmobilesensors.com
+t: @urbansensors
+e: info@urbanmobilesensors.com
+
 About:
 
 The nUrveSensor is the first hardware mobile sensor manufactured by Urban Mobile Sensors, LLC.

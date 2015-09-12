@@ -3,7 +3,8 @@
 #include "Wire.h"
 #include "SPI.h"
 #include "Adafruit_Sensor.h"      // Adafruit, standard library for all sensors
-#include "SD.h"
+#include "SD.h" // We're using a special SD Library from Adafruit. More information can be found here:  https://github.com/adafruit/SD
+
 
 // Sensor Specific Includes
 #include "Adafruit_HTU21DF.h"     // Temperature and Humidity Sensor - HTU21D-F
@@ -15,7 +16,8 @@
 int IterationCounter = 0;
 
 // DataLogger vars
-const int chipSelect = 10; // For SD Data Logger
+const int chipSelect = 4;
+File dataFile;
 
 // GPS vars
 #define GPSECHO false
@@ -39,6 +41,8 @@ float GPS_Altitude = -9999;
 float GPS_Speed = -9999;
 float GPS_Angle = -9999;
 float GPS_Sats = -9999;
+float GPS_Fix = -9999;
+float GPS_Quality = -9999;
 float AMB_Temp = -9999;
 float AMB_Humd = -9999;
 float AMB_Lux = -9999;
@@ -59,7 +63,7 @@ void setup() {
   Serial.print("| w: urbanmobilesensors.com | t: @urbansensors | e: info@urbansensors.com |\n");
   Serial.print("+-------------------------------------------------------------------------+\n");
 
-//  setupDataLogger();        // Set up Data Logger
+  setupDataLogger();        // Set up Data Logger
   setupGPS();               // Set up GPS 
 //  setupComms();             // Set up Comms | PLACEHOLDER
   setupAmbientTemp();       // Set up Ambient Sensor 1 - Temp & Humidity
@@ -232,12 +236,62 @@ void loop() {
   Serial.print("| Y: "); Serial.print(RDQ_AcY); Serial.print("m/s^2\n");
   Serial.print("| Z: "); Serial.print(RDQ_AcZ); Serial.print("m/s^2\n");
 
-
   // =============================================================================================
   // OTHER SENSORS
   // =============================================================================================
   Serial.print("+-------------------------------------------------------------------------+\n");
   Serial.print("| Other Information... For later                                          |\n");
+
+  // =============================================================================================
+  // DATA LOGGING
+  // =============================================================================================
+  // make a string for assembling the data to log:
+  String dataString = "";
+
+  // Build the String
+/*  
+ *   
+ for (int analogPin = 0; analogPin < 3; analogPin++) {
+    int sensor = analogRead(analogPin);
+    dataString += String(sensor);
+    if (analogPin < 2) {
+      dataString += ","; 
+    }
+  }
+ */
+ // We need to address issues with writing the header in each file.
+
+  if(IterationCounter == 1) {
+    dataFile.println("ID,DATESTAMP,TIMESTAMP,GPS_LAT,GPS_LON,GPS_Speed,GPS_Alt,GPS_Sats,GPS_Fix,GPS_Quality,AMB_Temp,AMB_Humd,AMB_Lux,AMB_Snd,RDQ_AcX,RDQ_AcY,RDQ,AcZ");
+  }
+  // DATASTRING PRINTING
+  dataFile.print("ID-TBD");dataFile.print(",");
+  dataFile.print(GPS_Date);dataFile.print(",");
+  dataFile.print(GPS_Time);dataFile.print(",");
+  dataFile.print(GPS_Lat,6);dataFile.print(",");
+  dataFile.print(GPS_Lon,6);dataFile.print(",");
+  dataFile.print(GPS_Speed,2);dataFile.print(",");
+  dataFile.print(GPS_Altitude,2);dataFile.print(",");
+  dataFile.print(GPS_Sats,2);dataFile.print(",");
+  dataFile.print(GPS_Fix,2);dataFile.print(",");
+  dataFile.print(GPS_Quality,2);dataFile.print(",");
+  dataFile.print(AMB_Temp,2);dataFile.print(",");
+  dataFile.print(AMB_Humd,2);dataFile.print(",");
+  dataFile.print(AMB_Lux,2);dataFile.print(",");
+  dataFile.print(AMB_Snd,2);dataFile.print(",");
+  dataFile.print(RDQ_AcX,4);dataFile.print(",");
+  dataFile.print(RDQ_AcY,4);dataFile.print(",");
+  dataFile.print(RDQ_AcZ,4);
+  dataFile.println("");
+  // END OF DATASTRING
+
+  // print to the serial port too:
+  Serial.print("+-------------------------------------------------------------------------+\n");
+  Serial.print("| Output to data logger\n");
+  Serial.print("| ");Serial.println(dataString);
+  dataFile.flush();
+  
+  
   Serial.print("+-------------------------------------------------------------------------+\n");
   Serial.print("|                             - End of Loop -                             |\n");
   Serial.print("+-------------------------------------------------------------------------+\n");

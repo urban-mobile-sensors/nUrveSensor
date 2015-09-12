@@ -109,6 +109,10 @@ void loop() {
   Serial.print("| Iteration: #");Serial.println(IterationCounter);
   
   Serial.print("+-------------------------------------------------------------------------+\n");
+  Serial.print("| Board Information: [TO DO]\n");
+  Serial.println("| ...: ");
+
+  Serial.print("+-------------------------------------------------------------------------+\n");
   Serial.print("| Communication Data: [TO DO]\n");
   Serial.print("| SSID: ");Serial.println("");
   Serial.print("| RSSI: ");Serial.println("");
@@ -156,10 +160,13 @@ void loop() {
   Serial.print(GPS.hour, DEC); Serial.print(':');Serial.print(GPS.minute, DEC); Serial.print(':');Serial.print(GPS.seconds, DEC); Serial.print('.');Serial.println(GPS.milliseconds);
   Serial.print("| Lat: ");Serial.println(GPS_Lat,6);
   Serial.print("| Lon: ");Serial.println(GPS_Lon,6);
-  Serial.print("| Speed: ");Serial.println(GPS_Speed,2);
+  Serial.print("| Speed (knots): ");Serial.println(GPS_Speed,2);
   Serial.print("| Altitude: ");Serial.println(GPS_Altitude,2);
   Serial.print("| Angle: ");Serial.println(GPS_Angle,2);
   Serial.print("| Sats: ");Serial.println(GPS_Sats,0);
+  Serial.print("| Fix: ");Serial.println(GPS.fix,2);  // TO BE DONE
+  Serial.print("| Quality: ");Serial.println(GPS.fixquality,2);  // TO BE DONE
+
   // END OF GPS CODE
 
   // =============================================================================================

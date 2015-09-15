@@ -177,16 +177,14 @@ void loop() {
   // AMBIENT SENSORS
   // =============================================================================================
   // Ambient set temperature and humidity
-//  AMB_Temp = htu.readTemperature();
-//  AMB_Humd = htu.readHumidity();
+  AMB_Temp = htu.readTemperature();
+  AMB_Humd = htu.readHumidity();
 
   // Ambient - Set Light Values
   sensors_event_t event;
-/*  
- *   
- tsl.getEvent(&event);
+  tsl.getEvent(&event);
   if (event.light) {AMB_Lux = event.light;} else {AMB_Lux = -9998;}
-*/
+
    // Ambient - Set Sound Values
    unsigned long startMillis= millis();  // Start of sample window
    unsigned int peakToPeak = 0;   // peak-to-peak level

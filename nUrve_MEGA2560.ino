@@ -260,12 +260,19 @@ void loop() {
  // We need to address issues with writing the header in each file.
 
   if(IterationCounter == 1) {
-    dataFile.println("ID,DATESTAMP,TIMESTAMP,GPS_LAT,GPS_LON,GPS_Speed,GPS_Alt,GPS_Sats,GPS_Fix,GPS_Quality,AMB_Temp,AMB_Humd,AMB_Lux,AMB_Snd,RDQ_AcX,RDQ_AcY,RDQ,AcZ");
+    dataFile.println("ID,DATESTAMP,TIMESTAMP,GPS_LAT,GPS_LON,GPS_Speed,GPS_Alt,GPS_Sats,GPS_Fix,GPS_Quality,AMB_Temp,AMB_Humd,AMB_Lux,AMB_Snd,RDQ_AcX,RDQ_AcY,RDQ_AcZ");
   }
+// LEFT HERE... I HAVE TO FIGURE OUT HOW TO FORMAT THE DATE AND TIME PROPERLY
+//  String timestamp_len = sprintf(timestamp, "20%02d-%02d-%02dT%02d:%02d:%02dZ", GPS.year, GPS.month, GPS.day, GPS.hour, GPS.minute, GPS.seconds);
+//String FormattedDate = Serial.print("20");Serial.print(GPS.year, DEC);Serial.print(":");Serial.print(GPS.month, DEC);Serial.print(":");Serial.print(GPS.month, DEC);Serial.print(":");Serial.println(GPS.day, DEC);
+//  String FormattedTime = Serial.print(GPS.hour, DEC); Serial.print(':');Serial.print(GPS.minute, DEC); Serial.print(':');Serial.print(GPS.seconds, DEC); Serial.print('.');Serial.println(GPS.milliseconds);
+  
   // DATASTRING PRINTING
-  dataFile.print("ID-TBD");dataFile.print(",");
-  dataFile.print(GPS_Date);dataFile.print(",");
-  dataFile.print(GPS_Time);dataFile.print(",");
+  dataFile.print("ID: ");dataFile.print(IterationCounter);dataFile.print(",");
+  // START OF DATE STIME SNAFU
+  dataFile.print("20");dataFile.print(GPS.year, DEC);dataFile.print(":");dataFile.print(GPS.month, DEC);dataFile.print(":");dataFile.print(GPS.month, DEC);dataFile.print(":");dataFile.println(GPS.day, DEC);dataFile.print(",");
+  dataFile.print(GPS.hour, DEC); dataFile.print(':');dataFile.print(GPS.minute, DEC); dataFile.print(':');dataFile.print(GPS.seconds, DEC); dataFile.print('.');dataFile.println(GPS.milliseconds);dataFile.print(",");
+  // END OF DATE TIME SNAFU
   dataFile.print(GPS_Lat,6);dataFile.print(",");
   dataFile.print(GPS_Lon,6);dataFile.print(",");
   dataFile.print(GPS_Speed,2);dataFile.print(",");

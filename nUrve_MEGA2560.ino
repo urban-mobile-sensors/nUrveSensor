@@ -39,17 +39,49 @@ float GPS_Lat = -9999;
 float GPS_Lon = -9999;
 float GPS_Altitude = -9999;
 float GPS_Speed = -9999;
+float GPS_SpeedMin = -9999;
+float GPS_SpeedMax = -9999;
+float GPS_SpeedMea = -9999;
+float GPS_SpeedMed = -9999;
 float GPS_Angle = -9999;
 float GPS_Sats = -9999;
 float GPS_Fix = -9999;
 float GPS_Quality = -9999;
 float AMB_Temp = -9999;
+float AMB_TempMin = -9999;
+float AMB_TempMax = -9999;
+float AMB_TempMea = -9999;
+float AMB_TempMed = -9999;
 float AMB_Humd = -9999;
+float AMB_HumdMin = -9999;
+float AMB_HumdMax = -9999;
+float AMB_HumdMea = -9999;
+float AMB_HumdMed = -9999;
 float AMB_Lux = -9999;
+float AMB_LuxMin = -9999;
+float AMB_LuxMax = -9999;
+float AMB_LuxMea = -9999;
+float AMB_LuxMed = -9999;
 float AMB_Snd = -9999;
+float AMB_SndMin = -9999;
+float AMB_SndMax = -9999;
+float AMB_SndMea = -9999;
+float AMB_SndMed = -9999;
 float RDQ_AcX = -9999;
+float RDQ_AcXMin = -9999;
+float RDQ_AcXMax = -9999;
+float RDQ_AcXMea = -9999;
+float RDQ_AcXMed = -9999;
 float RDQ_AcY = -9999;
+float RDQ_AcYMin = -9999;
+float RDQ_AcYMax = -9999;
+float RDQ_AcYMea = -9999;
+float RDQ_AcYMed = -9999;
 float RDQ_AcZ = -9999;
+float RDQ_AcZMin = -9999;
+float RDQ_AcZMax = -9999;
+float RDQ_AcZMea = -9999;
+float RDQ_AcZMed = -9999;
 
 const int AMB_SND_sampleWindow = 500; // Sample window width in mS (50 mS = 20Hz)
 unsigned int AMB_SND_sample;
@@ -260,7 +292,8 @@ void loop() {
  // We need to address issues with writing the header in each file.
 
   if(IterationCounter == 1) {
-    dataFile.println("ID,DATESTAMP,TIMESTAMP,GPS_LAT,GPS_LON,GPS_Speed,GPS_Alt,GPS_Sats,GPS_Fix,GPS_Quality,AMB_Temp,AMB_Humd,AMB_Lux,AMB_Snd,RDQ_AcX,RDQ_AcY,RDQ_AcZ");
+    //dataFile.println("ID,DATESTAMP,TIMESTAMP,GPS_LAT,GPS_LON,GPS_Speed,GPS_Alt,GPS_Sats,GPS_Fix,GPS_Quality,AMB_Temp,AMB_Humd,AMB_Lux,AMB_Snd,RDQ_AcX,RDQ_AcY,RDQ_AcZ");
+    dataFile.println("ID,DATESTAMP,TIMESTAMP,GPS_LAT,GPS_LON,GPS_Speed,GPS_SpeedMin,GPS_SpeedMax,GPS_SpeedMea,GPS_SpeedMed,GPS_Alt,GPS_Sats,GPS_Fix,GPS_Quality,AMB_Temp,AMB_TempMin,AMB_TempMax,AMB_TempMea,AMB_TempMed,AMB_Humd,AMB_HumdMin,AMB_HumdMax,AMB_HumdMea,AMB_HumdMed,AMB_Lux,AMB_LuxMin,AMB_LuxMax,AMB_LuxMea,AMB_LuxMed,AMB_Snd,AMB_SndMin,AMB_SndMax,AMB_SndMea,AMB_SndMed,RDQ_AcX,RDQ_AcXMin,RDQ_AcXMax,RDQ_AcXMea,RDQ_AcXMed,RDQ_AcY,RDQ_AcYMin,RDQ_AcYMax,RDQ_AcYMea,RDQ_AcYMed,RDQ_AcZ,RDQ_AcZMin,RDQ_AcZMax,RDQ_AcZMea,RDQ_AcZMed");
   }
 // LEFT HERE... I HAVE TO FIGURE OUT HOW TO FORMAT THE DATE AND TIME PROPERLY
 //  String timestamp_len = sprintf(timestamp, "20%02d-%02d-%02dT%02d:%02d:%02dZ", GPS.year, GPS.month, GPS.day, GPS.hour, GPS.minute, GPS.seconds);
@@ -270,23 +303,55 @@ void loop() {
   // DATASTRING PRINTING
   dataFile.print("ID: ");dataFile.print(IterationCounter);dataFile.print(",");
   // START OF DATE STIME SNAFU
-  dataFile.print("20");dataFile.print(GPS.year, DEC);dataFile.print(":");dataFile.print(GPS.month, DEC);dataFile.print(":");dataFile.print(GPS.month, DEC);dataFile.print(":");dataFile.println(GPS.day, DEC);dataFile.print(",");
-  dataFile.print(GPS.hour, DEC); dataFile.print(':');dataFile.print(GPS.minute, DEC); dataFile.print(':');dataFile.print(GPS.seconds, DEC); dataFile.print('.');dataFile.println(GPS.milliseconds);dataFile.print(",");
+  dataFile.print("20");dataFile.print(GPS.year, DEC);dataFile.print(":");dataFile.print(GPS.month, DEC);dataFile.print(":");dataFile.print(GPS.month, DEC);dataFile.print(":");dataFile.print(GPS.day, DEC);dataFile.print(",");
+  dataFile.print(GPS.hour, DEC); dataFile.print(':');dataFile.print(GPS.minute, DEC); dataFile.print(':');dataFile.print(GPS.seconds, DEC); dataFile.print('.');dataFile.print(GPS.milliseconds);dataFile.print(",");
   // END OF DATE TIME SNAFU
   dataFile.print(GPS_Lat,6);dataFile.print(",");
   dataFile.print(GPS_Lon,6);dataFile.print(",");
   dataFile.print(GPS_Speed,2);dataFile.print(",");
+  dataFile.print(GPS_SpeedMin,2);dataFile.print(",");
+  dataFile.print(GPS_SpeedMax,2);dataFile.print(",");
+  dataFile.print(GPS_SpeedMea,2);dataFile.print(",");
+  dataFile.print(GPS_SpeedMed,2);dataFile.print(",");
   dataFile.print(GPS_Altitude,2);dataFile.print(",");
   dataFile.print(GPS_Sats,2);dataFile.print(",");
   dataFile.print(GPS_Fix,2);dataFile.print(",");
   dataFile.print(GPS_Quality,2);dataFile.print(",");
   dataFile.print(AMB_Temp,2);dataFile.print(",");
+  dataFile.print(AMB_TempMin,2);dataFile.print(",");
+  dataFile.print(AMB_TempMax,2);dataFile.print(",");
+  dataFile.print(AMB_TempMea,2);dataFile.print(",");
+  dataFile.print(AMB_TempMed,2);dataFile.print(",");
   dataFile.print(AMB_Humd,2);dataFile.print(",");
+  dataFile.print(AMB_HumdMin,2);dataFile.print(",");
+  dataFile.print(AMB_HumdMax,2);dataFile.print(",");
+  dataFile.print(AMB_HumdMea,2);dataFile.print(",");
+  dataFile.print(AMB_HumdMed,2);dataFile.print(",");
   dataFile.print(AMB_Lux,2);dataFile.print(",");
+  dataFile.print(AMB_LuxMin,2);dataFile.print(",");
+  dataFile.print(AMB_LuxMax,2);dataFile.print(",");
+  dataFile.print(AMB_LuxMea,2);dataFile.print(",");
+  dataFile.print(AMB_LuxMed,2);dataFile.print(",");
   dataFile.print(AMB_Snd,2);dataFile.print(",");
+  dataFile.print(AMB_SndMin,2);dataFile.print(",");
+  dataFile.print(AMB_SndMax,2);dataFile.print(",");
+  dataFile.print(AMB_SndMea,2);dataFile.print(",");
+  dataFile.print(AMB_SndMed,2);dataFile.print(",");
   dataFile.print(RDQ_AcX,4);dataFile.print(",");
+  dataFile.print(RDQ_AcXMin,4);dataFile.print(",");
+  dataFile.print(RDQ_AcXMax,4);dataFile.print(",");
+  dataFile.print(RDQ_AcXMea,4);dataFile.print(",");
+  dataFile.print(RDQ_AcXMed,4);dataFile.print(",");
   dataFile.print(RDQ_AcY,4);dataFile.print(",");
-  dataFile.print(RDQ_AcZ,4);
+  dataFile.print(RDQ_AcYMin,4);dataFile.print(",");
+  dataFile.print(RDQ_AcYMax,4);dataFile.print(",");
+  dataFile.print(RDQ_AcYMea,4);dataFile.print(",");
+  dataFile.print(RDQ_AcYMed,4);dataFile.print(",");
+  dataFile.print(RDQ_AcZ,4);dataFile.print(",");
+  dataFile.print(RDQ_AcZMin,4);dataFile.print(",");
+  dataFile.print(RDQ_AcZMax,4);dataFile.print(",");
+  dataFile.print(RDQ_AcZMea,4);dataFile.print(",");
+  dataFile.print(RDQ_AcZMed,4);
   dataFile.println("");
   // END OF DATASTRING
 
@@ -300,5 +365,5 @@ void loop() {
   Serial.print("+-------------------------------------------------------------------------+\n");
   Serial.print("|                             - End of Loop -                             |\n");
   Serial.print("+-------------------------------------------------------------------------+\n");
-  delay(1000); // delay is measured in milliseconds - 1000 ms= 1 s
+  delay(500); // delay is measured in milliseconds - 1000 ms= 1 s
 }

@@ -1,29 +1,79 @@
-// Basic Includes
+/* 
+ * +-------------------------------------------------------------------------+
+ * |               Urban Mobile Sensors, LLC - nUrve Sensor V1               |
+ * +-------------------------------------------------------------------------+
+ * | w: urbanmobilesensors.com | t: @urbansensors | e: info@urbansensors.com |
+ * | g: https://github.com/urban-mobile-sensors/nUrveSensor                  |
+ * +-------------------------------------------------------------------------+
+ * | This code run on the first generation or the nUrve Sensors. The nUrve   |
+ * | sensor collects multiple dimensions of ambient and road quality data.   |
+ * | More information can be found on the urban mobile sensors website.      |
+ * |                                                                         |
+ * | Currently this code only works on Arduino MEGA based architectures.     |
+ * | It can be ported over to Due based architecture, but cannot be run on   |
+ * | UNO, or other boards that have 2K of SRAM.                              |
+ * +-------------------------------------------------------------------------+
+ * | STATISTICS:                                                             |
+ * | Dynamic Memory:   3,478 bytes (42%) (Target: 35%)                       | 
+ * | Storage Space:   32,732 bytes (12%)                                     |
+ * | Compiled for:     Arduino MEGA 2560                                     |
+ * +-------------------------------------------------------------------------+
+ * | CONTACT INFORMATION:                                                    |
+ * | Primary author:  Nadir Ait-Laoussine                                    |
+ * | Primary contact: nadir at urbanmobilesensots dot com                    |
+ * | Contributors:    Andrew Leonard                                         |
+ * |                  Mickey Chea                                            |
+ * |                  Chris Templeman                                        |
+ * | Note;            This code is based on contributions by members listed  |
+ * |                  above, and many examples available on adafruit and     |
+ * |                  sparkfun's website.                                    |
+ * | Build #:         23                                                     |
+ * | Last update:     2015-10-01                                             |
+ * +-------------------------------------------------------------------------+
+ * | NEEDS                                                                   |
+ * | a) Remove all serial.print - they take up SRAM | 20150919
+ * | b) Calculate min/max/avg | 20150920
+ * | c) Figure out how to make write to the data card faster (one string?) | 20150919
+ * | d) Calculate median (more complex)
+ * | e) Clean up code
+ * +-------------------------------------------------------------------------+
+ */
+/* +-------------------------------------------------------------------------+
+ * | INCLUDES / EXTERNAL LIBRARY REFERENCES                                  |
+ * +-------------------------------------------------------------------------+
+ */
 #include "SoftwareSerial.h"
 #include "Wire.h"
 #include "SPI.h"
-#include "Adafruit_Sensor.h"      // Adafruit, standard library for all sensors
-#include "SD.h" // We're using a special SD Library from Adafruit. More information can be found here:  https://github.com/adafruit/SD
+#include "Adafruit_Sensor.h"    // Adafruit, standard library for all sensors
+#include "SD.h"                 // We're using a special SD Library from Adafruit. 
+                                // More information can be found here:  https://github.com/adafruit/SD
+#include "Adafruit_HTU21DF.h"   // Temperature and Humidity Sensor - HTU21D-F
+#include "Adafruit_TSL2561_U.h" // Light Sensor - TSL2561
+#include "Adafruit_ADXL345_U.h" // Accelerometer - ADXL345
+#include "Adafruit_GPS.h"       // GPS Sensor
 
-
-// Sensor Specific Includes
-#include "Adafruit_HTU21DF.h"     // Temperature and Humidity Sensor - HTU21D-F
-#include "Adafruit_TSL2561_U.h"   // Light Sensor - TSL2561
-#include "Adafruit_ADXL345_U.h"   // Accelerometer - ADXL345
-#include "Adafruit_GPS.h"         // GPS
-
+/* +-------------------------------------------------------------------------+
+ * | GLOBAL VARIABLES                                                        |
+ * +-------------------------------------------------------------------------+
+ * | We set global variables here to create default values. General          |
+ * | convention that we use:                                                 |
+ * |  -9999 : Variable created, but no data associated                       |
+ * |  -9998 | Variable create, but error in reading sets it to -9998         |
+ * +-------------------------------------------------------------------------+
+ */
 //General vars
-int IterationCounter = 0;
+int IterationCounter = 0;     // We use this for development purposes, may not need it in production
 
 // DataLogger vars
-const int chipSelect = 4;
-File dataFile;
+const int chipSelect = 4;     // We're using Analog 4
+File dataFile;                // This is the variable name for the data file
 
 // GPS vars
 #define GPSECHO false
 boolean usingInterrupt = false;
 void useInterrupt(boolean); // Func prototype keeps Arduino 0023 happy
-Adafruit_GPS GPS(&Serial1);
+Adafruit_GPS GPS(&Serial1); // It's on Serial 0 (RX0, TX0)
 
 //  Sensor vars
 Adafruit_HTU21DF htu = Adafruit_HTU21DF();                                            //HTUD21DF I2C Address: 0x40 (cannot be changed)
@@ -89,11 +139,7 @@ unsigned int AMB_SND_sample;
 void setup() {
   // initialize serial and wait for the port to open:
   Serial.begin(115200);
-  Serial.print("+-------------------------------------------------------------------------+\n");
-  Serial.print("|               Urban Mobile Sensors, LLC - nUrve Sensor V1               |\n");
-  Serial.print("+-------------------------------------------------------------------------+\n");
-  Serial.print("| w: urbanmobilesensors.com | t: @urbansensors | e: info@urbansensors.com |\n");
-  Serial.print("+-------------------------------------------------------------------------+\n");
+  Serial.println("And we're off!");
 
   setupDataLogger();        // Set up Data Logger
   setupGPS();               // Set up GPS 
@@ -102,8 +148,8 @@ void setup() {
   setupAmbientLux();        // Set up Ambient Sensor 2 - Luminosity
   setupAmbientSound();      // Set up Ambient Sensor 3 - Sound
   setupRoadSensor();        // Set up Road Sensor
+  Serial.println("All systems go!");
 }
-
 
 // ADDITIONAL CODE
 // GPS
@@ -139,21 +185,15 @@ uint32_t timer = millis();
 
 void loop() {
   IterationCounter ++;
-  Serial.print("+-------------------------------------------------------------------------+\n");
-  Serial.print("|                            - Start of Loop -                            |\n");
-  Serial.print("+-------------------------------------------------------------------------+\n");
-  Serial.print("| Iteration: #");Serial.println(IterationCounter);
-  
-  Serial.print("+-------------------------------------------------------------------------+\n");
+ Serial.print("| Iteration: #");Serial.println(IterationCounter);
+/*  
+ *   
   Serial.print("| Board Information: [TO DO]\n");
-  Serial.println("| ...: ");
-
-  Serial.print("+-------------------------------------------------------------------------+\n");
   Serial.print("| Communication Data: [TO DO]\n");
   Serial.print("| SSID: ");Serial.println("");
   Serial.print("| RSSI: ");Serial.println("");
   Serial.print("| Nets: ");Serial.println("");
-
+*/
   // GPS CODE
   if (! usingInterrupt) {
     // read data from the GPS in the 'main loop'
@@ -171,8 +211,8 @@ void loop() {
   // if millis() or timer wraps around, we'll just reset it
   if (timer > millis())  timer = millis();
 
-  // approximately every 2 seconds or so, print out the current stats
-  if (millis() - timer > 2000) { 
+  // approximately every 1 seconds or so, print out the current stats
+  if (millis() - timer > 1000) { 
     timer = millis(); // reset the timer
     if (GPS.fix) {
 //      GPS_Date = Serial.println(GPS.year);
@@ -188,28 +228,26 @@ void loop() {
   // STILL TO DO HERE:
   // 1) Get Date as a single properly formatted string YYYY-MM-DD
   // 2) Get Time as a single properly formatted string HH:MM:SS.mmm
-  Serial.print("+-------------------------------------------------------------------------+\n");
-  Serial.print("| GPS Information:\n");
+ Serial.print("| GPS Information:\n");
   Serial.print("| Date: ");Serial.println(GPS_Date);
   Serial.print("20");Serial.print(GPS.year, DEC);Serial.print(":");Serial.print(GPS.month, DEC);Serial.print(":");Serial.print(GPS.month, DEC);Serial.print(":");Serial.println(GPS.day, DEC);
   Serial.print("| Time: ");Serial.println(GPS_Time);
   Serial.print(GPS.hour, DEC); Serial.print(':');Serial.print(GPS.minute, DEC); Serial.print(':');Serial.print(GPS.seconds, DEC); Serial.print('.');Serial.println(GPS.milliseconds);
-  Serial.print("| Lat: ");Serial.println(GPS_Lat,6);
+Serial.print("| Lat: ");Serial.println(GPS_Lat,6);
   Serial.print("| Lon: ");Serial.println(GPS_Lon,6);
-  Serial.print("| Speed (knots): ");Serial.println(GPS_Speed,2);
+   Serial.print("| Speed (knots): ");Serial.println(GPS_Speed,2);
   Serial.print("| Altitude: ");Serial.println(GPS_Altitude,2);
   Serial.print("| Angle: ");Serial.println(GPS_Angle,2);
   Serial.print("| Sats: ");Serial.println(GPS_Sats,0);
   Serial.print("| Fix: ");Serial.println(GPS.fix,2);  // TO BE DONE
   Serial.print("| Quality: ");Serial.println(GPS.fixquality,2);  // TO BE DONE
-
   // END OF GPS CODE
 
   // =============================================================================================
   // AMBIENT SENSORS
   // =============================================================================================
   // Ambient set temperature and humidity
-  AMB_Temp = htu.readTemperature();
+   AMB_Temp = htu.readTemperature();
   AMB_Humd = htu.readHumidity();
 
   // Ambient - Set Light Values
@@ -243,9 +281,8 @@ void loop() {
    peakToPeak = signalMax - signalMin;  // max - min = peak-peak amplitude
    double volts = (peakToPeak * 3.3) / 1024;  // convert to volts
    AMB_Snd = volts;
-  
   // Output of data - For development purposes only
-  Serial.print("+-------------------------------------------------------------------------+\n");
+ Serial.print("+-------------------------------------------------------------------------+\n");
   Serial.print("| Ambient Information:\n");
   Serial.print("| Temp: ");Serial.print(AMB_Temp,2);Serial.println("C");
   Serial.print("| Humid: ");Serial.print(AMB_Humd,2);Serial.println("%");
@@ -260,23 +297,45 @@ void loop() {
   RDQ_AcY = event.acceleration.y;
   RDQ_AcZ = event.acceleration.z;
   // Display the results (acceleration is measured in m/s^2)
+ /* 
+  *  
   Serial.print("+-------------------------------------------------------------------------+\n");
   Serial.print("| Accelerometer Information:\n");
-  Serial.print("| X: "); Serial.print(RDQ_AcX); Serial.print("m/s^2\n");
+*/
+Serial.print("| X: "); Serial.print(RDQ_AcX); Serial.print("m/s^2\n");
   Serial.print("| Y: "); Serial.print(RDQ_AcY); Serial.print("m/s^2\n");
   Serial.print("| Z: "); Serial.print(RDQ_AcZ); Serial.print("m/s^2\n");
+/**/
+  /* +===========================================================================================+
+   * | OTHER SENSORS                                                                             |
+   * +===========================================================================================+ 
+   * | Currently there are no other sensors                                                      |
+   * +===========================================================================================+ 
+   */
 
-  // =============================================================================================
-  // OTHER SENSORS
-  // =============================================================================================
-  Serial.print("+-------------------------------------------------------------------------+\n");
-  Serial.print("| Other Information... For later                                          |\n");
-
-  // =============================================================================================
-  // DATA LOGGING
-  // =============================================================================================
+  /* +===========================================================================================+
+   * | DATA LOGGING                                                                              |
+   * +===========================================================================================+ 
+   * | Process:                                                                                  |
+   * | 1) Open the data card (This should be in the setup)
+   * | 2) If this is the first iteration, check to see if the file is there on the data card (use date format)
+   *   -  If file is there, then go on (This should be in the setup)
+   *      If file is not there, create and add header row
+   *   3) Regardless of iteration, start to write data
+   *   4) close data card (flush)
+   *      - Check to see what exactly dataflush does. Does it push to file and write and empty variable, or does it clear session.
+   * +===========================================================================================+ 
+   */
   // make a string for assembling the data to log:
   String dataString = "";
+
+/*  
+ *   WE MAY NO LONGER NEED THIS AS WE'VE  DEFINED IT IN THE SETUP
+ if(IterationCounter == 1) {
+    // LATER: Add check to see if the file is there
+    dataFile.println("ID,DATESTAMP,TIMESTAMP,GPS_LAT,GPS_LON,GPS_Speed,GPS_SpeedMin,GPS_SpeedMax,GPS_SpeedMea,GPS_SpeedMed,GPS_Alt,GPS_Sats,GPS_Fix,GPS_Quality,AMB_Temp,AMB_TempMin,AMB_TempMax,AMB_TempMea,AMB_TempMed,AMB_Humd,AMB_HumdMin,AMB_HumdMax,AMB_HumdMea,AMB_HumdMed,AMB_Lux,AMB_LuxMin,AMB_LuxMax,AMB_LuxMea,AMB_LuxMed,AMB_Snd,AMB_SndMin,AMB_SndMax,AMB_SndMea,AMB_SndMed,RDQ_AcX,RDQ_AcXMin,RDQ_AcXMax,RDQ_AcXMea,RDQ_AcXMed,RDQ_AcY,RDQ_AcYMin,RDQ_AcYMax,RDQ_AcYMea,RDQ_AcYMed,RDQ_AcZ,RDQ_AcZMin,RDQ_AcZMax,RDQ_AcZMea,RDQ_AcZMed");
+  }
+ */
 
   // Build the String
 /*  
@@ -291,10 +350,6 @@ void loop() {
  */
  // We need to address issues with writing the header in each file.
 
-  if(IterationCounter == 1) {
-    //dataFile.println("ID,DATESTAMP,TIMESTAMP,GPS_LAT,GPS_LON,GPS_Speed,GPS_Alt,GPS_Sats,GPS_Fix,GPS_Quality,AMB_Temp,AMB_Humd,AMB_Lux,AMB_Snd,RDQ_AcX,RDQ_AcY,RDQ_AcZ");
-    dataFile.println("ID,DATESTAMP,TIMESTAMP,GPS_LAT,GPS_LON,GPS_Speed,GPS_SpeedMin,GPS_SpeedMax,GPS_SpeedMea,GPS_SpeedMed,GPS_Alt,GPS_Sats,GPS_Fix,GPS_Quality,AMB_Temp,AMB_TempMin,AMB_TempMax,AMB_TempMea,AMB_TempMed,AMB_Humd,AMB_HumdMin,AMB_HumdMax,AMB_HumdMea,AMB_HumdMed,AMB_Lux,AMB_LuxMin,AMB_LuxMax,AMB_LuxMea,AMB_LuxMed,AMB_Snd,AMB_SndMin,AMB_SndMax,AMB_SndMea,AMB_SndMed,RDQ_AcX,RDQ_AcXMin,RDQ_AcXMax,RDQ_AcXMea,RDQ_AcXMed,RDQ_AcY,RDQ_AcYMin,RDQ_AcYMax,RDQ_AcYMea,RDQ_AcYMed,RDQ_AcZ,RDQ_AcZMin,RDQ_AcZMax,RDQ_AcZMea,RDQ_AcZMed");
-  }
 // LEFT HERE... I HAVE TO FIGURE OUT HOW TO FORMAT THE DATE AND TIME PROPERLY
 //  String timestamp_len = sprintf(timestamp, "20%02d-%02d-%02dT%02d:%02d:%02dZ", GPS.year, GPS.month, GPS.day, GPS.hour, GPS.minute, GPS.seconds);
 //String FormattedDate = Serial.print("20");Serial.print(GPS.year, DEC);Serial.print(":");Serial.print(GPS.month, DEC);Serial.print(":");Serial.print(GPS.month, DEC);Serial.print(":");Serial.println(GPS.day, DEC);
@@ -355,15 +410,7 @@ void loop() {
   dataFile.println("");
   // END OF DATASTRING
 
-  // print to the serial port too:
-  Serial.print("+-------------------------------------------------------------------------+\n");
-  Serial.print("| Output to data logger\n");
-  Serial.print("| ");Serial.println(dataString);
   dataFile.flush();
-  
-  
-  Serial.print("+-------------------------------------------------------------------------+\n");
-  Serial.print("|                             - End of Loop -                             |\n");
-  Serial.print("+-------------------------------------------------------------------------+\n");
+
   delay(500); // delay is measured in milliseconds - 1000 ms= 1 s
 }

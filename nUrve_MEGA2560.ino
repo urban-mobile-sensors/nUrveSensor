@@ -27,8 +27,11 @@
  * | Note;            This code is based on contributions by members listed  |
  * |                  above, and many examples available on adafruit and     |
  * |                  sparkfun's website.                                    |
- * | Build #:         23                                                     |
- * | Last update:     2015-10-01                                             |
+ * |                  In addition special mentions go out to:                |
+ * |                  Chip McClelland (https://www.hackster.io/chipmc)       |
+ * |                  Kina Smith (http://www.kinasmith.com)                  |
+ * | Build #:         24                                                     |
+ * | Last update:     2015-10-08                                             |
  * +-------------------------------------------------------------------------+
  * | NEEDS                                                                   |
  * | a) Remove all serial.print - they take up SRAM | 20150919
@@ -54,6 +57,44 @@
 #include "Adafruit_GPS.h"       // GPS Sensor
 
 /* +-------------------------------------------------------------------------+
+ * | FONA DEV - IN HEAVY DEVELOPMENT                                       |
+ * +-------------------------------------------------------------------------+
+*/
+#define FONA_RX  50//50 //connect to FONA RX  // was 3
+#define FONA_TX  51//51 //connect to FONA TX  // was 4
+#define FONA_RST 22//22 //connect to FONA RST  // ??
+#define FONA_KEY 21// //connect to FONA KEY // was 6
+#define FONA_PS  7// //connect to FONA PS  // was 7
+int keyTime = 2000; // Time needed to turn ON or OFF the FONA
+
+
+///
+//String APN = "__PUT YOUR APN HERE!!__"; //Set APN for Mobile Service
+//
+//SoftwareSerial fonaSS = SoftwareSerial(FONA_TX, FONA_RX); //initialize software serial
+//String response; //global variable for pulling AT command responses from inside functions (there has to be a better way to do this)
+//unsigned long ATtimeOut = 10000; // How long we will give an AT command to comeplete
+//int SLEEP_MINUTES = 5; //Sleep time
+//
+////Sparkfun URL Building
+//const String publicKey = "__PUT YOUR PUBLIC KEY HERE__"; //Public Key for data stream
+//const String privateKey = "__PUT YOUR PRIVATE KEY HERE__"; //Private Key for data stream
+//const byte NUM_FIELDS = 4; //number of fields in data stream
+//const String fieldNames[NUM_FIELDS] = {"latitude", "longitude", "date", "time"}; //actual data fields
+//String fieldData[NUM_FIELDS]; //holder for the data values
+//
+////Holders for Position Data
+//String Lat;
+//String Lon;
+//String Date;
+//String Time;
+/* +-------------------------------------------------------------------------+
+ * | / FONA DEV - IN HEAVY DEVELOPMENT                                       |
+ * +-------------------------------------------------------------------------+
+*/
+
+
+/* +-------------------------------------------------------------------------+
  * | GLOBAL VARIABLES                                                        |
  * +-------------------------------------------------------------------------+
  * | We set global variables here to create default values. General          |
@@ -67,7 +108,8 @@ int IterationCounter = 0;     // We use this for development purposes, may not n
 
 // DataLogger vars
 const int chipSelect = 4;     // We're using Analog 4
-File dataFile;                // This is the variable name for the data file
+File dataFile_Master;
+File dataFile_Temp;                // This is the variable name for the data file
 
 // GPS vars
 #define GPSECHO false
@@ -140,13 +182,12 @@ void setup() {
   // initialize serial and wait for the port to open:
   Serial.begin(115200);
   Serial.println("And we're off!");
-
   setupDataLogger();        // Set up Data Logger
   setupGPS();               // Set up GPS 
 //  setupComms();             // Set up Comms | PLACEHOLDER
-  setupAmbientTemp();       // Set up Ambient Sensor 1 - Temp & Humidity
-  setupAmbientLux();        // Set up Ambient Sensor 2 - Luminosity
-  setupAmbientSound();      // Set up Ambient Sensor 3 - Sound
+//  setupAmbientTemp();       // Set up Ambient Sensor 1 - Temp & Humidity
+//  setupAmbientLux();        // Set up Ambient Sensor 2 - Luminosity
+//  setupAmbientSound();      // Set up Ambient Sensor 3 - Sound
   setupRoadSensor();        // Set up Road Sensor
   Serial.println("All systems go!");
 }
@@ -228,12 +269,13 @@ void loop() {
   // STILL TO DO HERE:
   // 1) Get Date as a single properly formatted string YYYY-MM-DD
   // 2) Get Time as a single properly formatted string HH:MM:SS.mmm
- Serial.print("| GPS Information:\n");
+/*
+  Serial.print("| GPS Information:\n");
   Serial.print("| Date: ");Serial.println(GPS_Date);
-  Serial.print("20");Serial.print(GPS.year, DEC);Serial.print(":");Serial.print(GPS.month, DEC);Serial.print(":");Serial.print(GPS.month, DEC);Serial.print(":");Serial.println(GPS.day, DEC);
+  Serial.print("20");Serial.print(GPS.year, DEC);Serial.print(":");Serial.print(GPS.month, DEC);Serial.print(":");Serial.print(GPS.day, DEC);Serial.print(":");Serial.println(GPS.day, DEC);
   Serial.print("| Time: ");Serial.println(GPS_Time);
   Serial.print(GPS.hour, DEC); Serial.print(':');Serial.print(GPS.minute, DEC); Serial.print(':');Serial.print(GPS.seconds, DEC); Serial.print('.');Serial.println(GPS.milliseconds);
-Serial.print("| Lat: ");Serial.println(GPS_Lat,6);
+  Serial.print("| Lat: ");Serial.println(GPS_Lat,6);
   Serial.print("| Lon: ");Serial.println(GPS_Lon,6);
    Serial.print("| Speed (knots): ");Serial.println(GPS_Speed,2);
   Serial.print("| Altitude: ");Serial.println(GPS_Altitude,2);
@@ -241,19 +283,19 @@ Serial.print("| Lat: ");Serial.println(GPS_Lat,6);
   Serial.print("| Sats: ");Serial.println(GPS_Sats,0);
   Serial.print("| Fix: ");Serial.println(GPS.fix,2);  // TO BE DONE
   Serial.print("| Quality: ");Serial.println(GPS.fixquality,2);  // TO BE DONE
-  // END OF GPS CODE
+*/
+// END OF GPS CODE
 
   // =============================================================================================
   // AMBIENT SENSORS
   // =============================================================================================
   // Ambient set temperature and humidity
-   AMB_Temp = htu.readTemperature();
-  AMB_Humd = htu.readHumidity();
-
+  // AMB_Temp = htu.readTemperature();
+  // AMB_Humd = htu.readHumidity();
   // Ambient - Set Light Values
   sensors_event_t event;
-  tsl.getEvent(&event);
-  if (event.light) {AMB_Lux = event.light;} else {AMB_Lux = -9998;}
+  // tsl.getEvent(&event);
+  //if (event.light) {AMB_Lux = event.light;} else {AMB_Lux = -9998;}
 
    // Ambient - Set Sound Values
    unsigned long startMillis= millis();  // Start of sample window
@@ -282,12 +324,14 @@ Serial.print("| Lat: ");Serial.println(GPS_Lat,6);
    double volts = (peakToPeak * 3.3) / 1024;  // convert to volts
    AMB_Snd = volts;
   // Output of data - For development purposes only
- Serial.print("+-------------------------------------------------------------------------+\n");
+  /*
+  Serial.print("+-------------------------------------------------------------------------+\n");
   Serial.print("| Ambient Information:\n");
   Serial.print("| Temp: ");Serial.print(AMB_Temp,2);Serial.println("C");
   Serial.print("| Humid: ");Serial.print(AMB_Humd,2);Serial.println("%");
   Serial.print("| Lux: ");Serial.print(AMB_Lux,2);Serial.println("Lux");
   Serial.print("| Sound: ");Serial.print(AMB_Snd);Serial.println("vlts");
+   */
 
   // =============================================================================================
   // ACCELEROMTER CODE
@@ -301,11 +345,10 @@ Serial.print("| Lat: ");Serial.println(GPS_Lat,6);
   *  
   Serial.print("+-------------------------------------------------------------------------+\n");
   Serial.print("| Accelerometer Information:\n");
-*/
-Serial.print("| X: "); Serial.print(RDQ_AcX); Serial.print("m/s^2\n");
+  Serial.print("| X: "); Serial.print(RDQ_AcX); Serial.print("m/s^2\n");
   Serial.print("| Y: "); Serial.print(RDQ_AcY); Serial.print("m/s^2\n");
   Serial.print("| Z: "); Serial.print(RDQ_AcZ); Serial.print("m/s^2\n");
-/**/
+*/
   /* +===========================================================================================+
    * | OTHER SENSORS                                                                             |
    * +===========================================================================================+ 
@@ -333,7 +376,7 @@ Serial.print("| X: "); Serial.print(RDQ_AcX); Serial.print("m/s^2\n");
  *   WE MAY NO LONGER NEED THIS AS WE'VE  DEFINED IT IN THE SETUP
  if(IterationCounter == 1) {
     // LATER: Add check to see if the file is there
-    dataFile.println("ID,DATESTAMP,TIMESTAMP,GPS_LAT,GPS_LON,GPS_Speed,GPS_SpeedMin,GPS_SpeedMax,GPS_SpeedMea,GPS_SpeedMed,GPS_Alt,GPS_Sats,GPS_Fix,GPS_Quality,AMB_Temp,AMB_TempMin,AMB_TempMax,AMB_TempMea,AMB_TempMed,AMB_Humd,AMB_HumdMin,AMB_HumdMax,AMB_HumdMea,AMB_HumdMed,AMB_Lux,AMB_LuxMin,AMB_LuxMax,AMB_LuxMea,AMB_LuxMed,AMB_Snd,AMB_SndMin,AMB_SndMax,AMB_SndMea,AMB_SndMed,RDQ_AcX,RDQ_AcXMin,RDQ_AcXMax,RDQ_AcXMea,RDQ_AcXMed,RDQ_AcY,RDQ_AcYMin,RDQ_AcYMax,RDQ_AcYMea,RDQ_AcYMed,RDQ_AcZ,RDQ_AcZMin,RDQ_AcZMax,RDQ_AcZMea,RDQ_AcZMed");
+    dataFile_Master.println("ID,DATESTAMP,TIMESTAMP,GPS_LAT,GPS_LON,GPS_Speed,GPS_SpeedMin,GPS_SpeedMax,GPS_SpeedMea,GPS_SpeedMed,GPS_Alt,GPS_Sats,GPS_Fix,GPS_Quality,AMB_Temp,AMB_TempMin,AMB_TempMax,AMB_TempMea,AMB_TempMed,AMB_Humd,AMB_HumdMin,AMB_HumdMax,AMB_HumdMea,AMB_HumdMed,AMB_Lux,AMB_LuxMin,AMB_LuxMax,AMB_LuxMea,AMB_LuxMed,AMB_Snd,AMB_SndMin,AMB_SndMax,AMB_SndMea,AMB_SndMed,RDQ_AcX,RDQ_AcXMin,RDQ_AcXMax,RDQ_AcXMea,RDQ_AcXMed,RDQ_AcY,RDQ_AcYMin,RDQ_AcYMax,RDQ_AcYMea,RDQ_AcYMed,RDQ_AcZ,RDQ_AcZMin,RDQ_AcZMax,RDQ_AcZMea,RDQ_AcZMed");
   }
  */
 
@@ -356,61 +399,121 @@ Serial.print("| X: "); Serial.print(RDQ_AcX); Serial.print("m/s^2\n");
 //  String FormattedTime = Serial.print(GPS.hour, DEC); Serial.print(':');Serial.print(GPS.minute, DEC); Serial.print(':');Serial.print(GPS.seconds, DEC); Serial.print('.');Serial.println(GPS.milliseconds);
   
   // DATASTRING PRINTING
-  dataFile.print("ID: ");dataFile.print(IterationCounter);dataFile.print(",");
+  dataFile_Master.print("ID: ");dataFile_Master.print(IterationCounter);dataFile_Master.print(",");
   // START OF DATE STIME SNAFU
-  dataFile.print("20");dataFile.print(GPS.year, DEC);dataFile.print(":");dataFile.print(GPS.month, DEC);dataFile.print(":");dataFile.print(GPS.month, DEC);dataFile.print(":");dataFile.print(GPS.day, DEC);dataFile.print(",");
-  dataFile.print(GPS.hour, DEC); dataFile.print(':');dataFile.print(GPS.minute, DEC); dataFile.print(':');dataFile.print(GPS.seconds, DEC); dataFile.print('.');dataFile.print(GPS.milliseconds);dataFile.print(",");
+  dataFile_Master.print("20");dataFile_Master.print(GPS.year, DEC);dataFile_Master.print(":");dataFile_Master.print(GPS.month, DEC);dataFile_Master.print(":");dataFile_Master.print(GPS.month, DEC);dataFile_Master.print(":");dataFile_Master.print(GPS.day, DEC);dataFile_Master.print(",");
+  dataFile_Master.print(GPS.hour, DEC); dataFile_Master.print(':');dataFile_Master.print(GPS.minute, DEC); dataFile_Master.print(':');dataFile_Master.print(GPS.seconds, DEC); dataFile_Master.print('.');dataFile_Master.print(GPS.milliseconds);dataFile_Master.print(",");
   // END OF DATE TIME SNAFU
-  dataFile.print(GPS_Lat,6);dataFile.print(",");
-  dataFile.print(GPS_Lon,6);dataFile.print(",");
-  dataFile.print(GPS_Speed,2);dataFile.print(",");
-  dataFile.print(GPS_SpeedMin,2);dataFile.print(",");
-  dataFile.print(GPS_SpeedMax,2);dataFile.print(",");
-  dataFile.print(GPS_SpeedMea,2);dataFile.print(",");
-  dataFile.print(GPS_SpeedMed,2);dataFile.print(",");
-  dataFile.print(GPS_Altitude,2);dataFile.print(",");
-  dataFile.print(GPS_Sats,2);dataFile.print(",");
-  dataFile.print(GPS_Fix,2);dataFile.print(",");
-  dataFile.print(GPS_Quality,2);dataFile.print(",");
-  dataFile.print(AMB_Temp,2);dataFile.print(",");
-  dataFile.print(AMB_TempMin,2);dataFile.print(",");
-  dataFile.print(AMB_TempMax,2);dataFile.print(",");
-  dataFile.print(AMB_TempMea,2);dataFile.print(",");
-  dataFile.print(AMB_TempMed,2);dataFile.print(",");
-  dataFile.print(AMB_Humd,2);dataFile.print(",");
-  dataFile.print(AMB_HumdMin,2);dataFile.print(",");
-  dataFile.print(AMB_HumdMax,2);dataFile.print(",");
-  dataFile.print(AMB_HumdMea,2);dataFile.print(",");
-  dataFile.print(AMB_HumdMed,2);dataFile.print(",");
-  dataFile.print(AMB_Lux,2);dataFile.print(",");
-  dataFile.print(AMB_LuxMin,2);dataFile.print(",");
-  dataFile.print(AMB_LuxMax,2);dataFile.print(",");
-  dataFile.print(AMB_LuxMea,2);dataFile.print(",");
-  dataFile.print(AMB_LuxMed,2);dataFile.print(",");
-  dataFile.print(AMB_Snd,2);dataFile.print(",");
-  dataFile.print(AMB_SndMin,2);dataFile.print(",");
-  dataFile.print(AMB_SndMax,2);dataFile.print(",");
-  dataFile.print(AMB_SndMea,2);dataFile.print(",");
-  dataFile.print(AMB_SndMed,2);dataFile.print(",");
-  dataFile.print(RDQ_AcX,4);dataFile.print(",");
-  dataFile.print(RDQ_AcXMin,4);dataFile.print(",");
-  dataFile.print(RDQ_AcXMax,4);dataFile.print(",");
-  dataFile.print(RDQ_AcXMea,4);dataFile.print(",");
-  dataFile.print(RDQ_AcXMed,4);dataFile.print(",");
-  dataFile.print(RDQ_AcY,4);dataFile.print(",");
-  dataFile.print(RDQ_AcYMin,4);dataFile.print(",");
-  dataFile.print(RDQ_AcYMax,4);dataFile.print(",");
-  dataFile.print(RDQ_AcYMea,4);dataFile.print(",");
-  dataFile.print(RDQ_AcYMed,4);dataFile.print(",");
-  dataFile.print(RDQ_AcZ,4);dataFile.print(",");
-  dataFile.print(RDQ_AcZMin,4);dataFile.print(",");
-  dataFile.print(RDQ_AcZMax,4);dataFile.print(",");
-  dataFile.print(RDQ_AcZMea,4);dataFile.print(",");
-  dataFile.print(RDQ_AcZMed,4);
-  dataFile.println("");
+  dataFile_Master.print(GPS_Lat,6);dataFile_Master.print(",");
+  dataFile_Master.print(GPS_Lon,6);dataFile_Master.print(",");
+  dataFile_Master.print(GPS_Speed,2);dataFile_Master.print(",");
+  dataFile_Master.print(GPS_SpeedMin,2);dataFile_Master.print(",");
+  dataFile_Master.print(GPS_SpeedMax,2);dataFile_Master.print(",");
+  dataFile_Master.print(GPS_SpeedMea,2);dataFile_Master.print(",");
+  dataFile_Master.print(GPS_SpeedMed,2);dataFile_Master.print(",");
+  dataFile_Master.print(GPS_Altitude,2);dataFile_Master.print(",");
+  dataFile_Master.print(GPS_Sats,2);dataFile_Master.print(",");
+  dataFile_Master.print(GPS_Fix,2);dataFile_Master.print(",");
+  dataFile_Master.print(GPS_Quality,2);dataFile_Master.print(",");
+  dataFile_Master.print(AMB_Temp,2);dataFile_Master.print(",");
+  dataFile_Master.print(AMB_TempMin,2);dataFile_Master.print(",");
+  dataFile_Master.print(AMB_TempMax,2);dataFile_Master.print(",");
+  dataFile_Master.print(AMB_TempMea,2);dataFile_Master.print(",");
+  dataFile_Master.print(AMB_TempMed,2);dataFile_Master.print(",");
+  dataFile_Master.print(AMB_Humd,2);dataFile_Master.print(",");
+  dataFile_Master.print(AMB_HumdMin,2);dataFile_Master.print(",");
+  dataFile_Master.print(AMB_HumdMax,2);dataFile_Master.print(",");
+  dataFile_Master.print(AMB_HumdMea,2);dataFile_Master.print(",");
+  dataFile_Master.print(AMB_HumdMed,2);dataFile_Master.print(",");
+  dataFile_Master.print(AMB_Lux,2);dataFile_Master.print(",");
+  dataFile_Master.print(AMB_LuxMin,2);dataFile_Master.print(",");
+  dataFile_Master.print(AMB_LuxMax,2);dataFile_Master.print(",");
+  dataFile_Master.print(AMB_LuxMea,2);dataFile_Master.print(",");
+  dataFile_Master.print(AMB_LuxMed,2);dataFile_Master.print(",");
+  dataFile_Master.print(AMB_Snd,2);dataFile_Master.print(",");
+  dataFile_Master.print(AMB_SndMin,2);dataFile_Master.print(",");
+  dataFile_Master.print(AMB_SndMax,2);dataFile_Master.print(",");
+  dataFile_Master.print(AMB_SndMea,2);dataFile_Master.print(",");
+  dataFile_Master.print(AMB_SndMed,2);dataFile_Master.print(",");
+  dataFile_Master.print(RDQ_AcX,4);dataFile_Master.print(",");
+  dataFile_Master.print(RDQ_AcXMin,4);dataFile_Master.print(",");
+  dataFile_Master.print(RDQ_AcXMax,4);dataFile_Master.print(",");
+  dataFile_Master.print(RDQ_AcXMea,4);dataFile_Master.print(",");
+  dataFile_Master.print(RDQ_AcXMed,4);dataFile_Master.print(",");
+  dataFile_Master.print(RDQ_AcY,4);dataFile_Master.print(",");
+  dataFile_Master.print(RDQ_AcYMin,4);dataFile_Master.print(",");
+  dataFile_Master.print(RDQ_AcYMax,4);dataFile_Master.print(",");
+  dataFile_Master.print(RDQ_AcYMea,4);dataFile_Master.print(",");
+  dataFile_Master.print(RDQ_AcYMed,4);dataFile_Master.print(",");
+  dataFile_Master.print(RDQ_AcZ,4);dataFile_Master.print(",");
+  dataFile_Master.print(RDQ_AcZMin,4);dataFile_Master.print(",");
+  dataFile_Master.print(RDQ_AcZMax,4);dataFile_Master.print(",");
+  dataFile_Master.print(RDQ_AcZMea,4);dataFile_Master.print(",");
+  dataFile_Master.print(RDQ_AcZMed,4);
+  dataFile_Master.println("");
   // END OF DATASTRING
 
-  dataFile.flush();
+  dataFile_Master.flush();
 
-  delay(500); // delay is measured in milliseconds - 1000 ms= 1 s
+  // THIS IS THE BACKUP LOG. THIS LOG IS WHAT GETS SENT THROUGH THE FONA
+  // DATASTRING PRINTING
+  dataFile_Temp.print("ID: ");dataFile_Temp.print(IterationCounter);dataFile_Temp.print(",");
+  // START OF DATE STIME SNAFU
+  dataFile_Temp.print("20");dataFile_Temp.print(GPS.year, DEC);dataFile_Temp.print(":");dataFile_Temp.print(GPS.month, DEC);dataFile_Temp.print(":");dataFile_Temp.print(GPS.month, DEC);dataFile_Temp.print(":");dataFile_Temp.print(GPS.day, DEC);dataFile_Temp.print(",");
+  dataFile_Temp.print(GPS.hour, DEC); dataFile_Temp.print(':');dataFile_Temp.print(GPS.minute, DEC); dataFile_Temp.print(':');dataFile_Temp.print(GPS.seconds, DEC); dataFile_Temp.print('.');dataFile_Temp.print(GPS.milliseconds);dataFile_Temp.print(",");
+  // END OF DATE TIME SNAFU
+  dataFile_Temp.print(GPS_Lat,6);dataFile_Temp.print(",");
+  dataFile_Temp.print(GPS_Lon,6);dataFile_Temp.print(",");
+  dataFile_Temp.print(GPS_Speed,2);dataFile_Temp.print(",");
+  dataFile_Temp.print(GPS_SpeedMin,2);dataFile_Temp.print(",");
+  dataFile_Temp.print(GPS_SpeedMax,2);dataFile_Temp.print(",");
+  dataFile_Temp.print(GPS_SpeedMea,2);dataFile_Temp.print(",");
+  dataFile_Temp.print(GPS_SpeedMed,2);dataFile_Temp.print(",");
+  dataFile_Temp.print(GPS_Altitude,2);dataFile_Temp.print(",");
+  dataFile_Temp.print(GPS_Sats,2);dataFile_Temp.print(",");
+  dataFile_Temp.print(GPS_Fix,2);dataFile_Temp.print(",");
+  dataFile_Temp.print(GPS_Quality,2);dataFile_Temp.print(",");
+  dataFile_Temp.print(AMB_Temp,2);dataFile_Temp.print(",");
+  dataFile_Temp.print(AMB_TempMin,2);dataFile_Temp.print(",");
+  dataFile_Temp.print(AMB_TempMax,2);dataFile_Temp.print(",");
+  dataFile_Temp.print(AMB_TempMea,2);dataFile_Temp.print(",");
+  dataFile_Temp.print(AMB_TempMed,2);dataFile_Temp.print(",");
+  dataFile_Temp.print(AMB_Humd,2);dataFile_Temp.print(",");
+  dataFile_Temp.print(AMB_HumdMin,2);dataFile_Temp.print(",");
+  dataFile_Temp.print(AMB_HumdMax,2);dataFile_Temp.print(",");
+  dataFile_Temp.print(AMB_HumdMea,2);dataFile_Temp.print(",");
+  dataFile_Temp.print(AMB_HumdMed,2);dataFile_Temp.print(",");
+  dataFile_Temp.print(AMB_Lux,2);dataFile_Temp.print(",");
+  dataFile_Temp.print(AMB_LuxMin,2);dataFile_Temp.print(",");
+  dataFile_Temp.print(AMB_LuxMax,2);dataFile_Temp.print(",");
+  dataFile_Temp.print(AMB_LuxMea,2);dataFile_Temp.print(",");
+  dataFile_Temp.print(AMB_LuxMed,2);dataFile_Temp.print(",");
+  dataFile_Temp.print(AMB_Snd,2);dataFile_Temp.print(",");
+  dataFile_Temp.print(AMB_SndMin,2);dataFile_Temp.print(",");
+  dataFile_Temp.print(AMB_SndMax,2);dataFile_Temp.print(",");
+  dataFile_Temp.print(AMB_SndMea,2);dataFile_Temp.print(",");
+  dataFile_Temp.print(AMB_SndMed,2);dataFile_Temp.print(",");
+  dataFile_Temp.print(RDQ_AcX,4);dataFile_Temp.print(",");
+  dataFile_Temp.print(RDQ_AcXMin,4);dataFile_Temp.print(",");
+  dataFile_Temp.print(RDQ_AcXMax,4);dataFile_Temp.print(",");
+  dataFile_Temp.print(RDQ_AcXMea,4);dataFile_Temp.print(",");
+  dataFile_Temp.print(RDQ_AcXMed,4);dataFile_Temp.print(",");
+  dataFile_Temp.print(RDQ_AcY,4);dataFile_Temp.print(",");
+  dataFile_Temp.print(RDQ_AcYMin,4);dataFile_Temp.print(",");
+  dataFile_Temp.print(RDQ_AcYMax,4);dataFile_Temp.print(",");
+  dataFile_Temp.print(RDQ_AcYMea,4);dataFile_Temp.print(",");
+  dataFile_Temp.print(RDQ_AcYMed,4);dataFile_Temp.print(",");
+  dataFile_Temp.print(RDQ_AcZ,4);dataFile_Temp.print(",");
+  dataFile_Temp.print(RDQ_AcZMin,4);dataFile_Temp.print(",");
+  dataFile_Temp.print(RDQ_AcZMax,4);dataFile_Temp.print(",");
+  dataFile_Temp.print(RDQ_AcZMea,4);dataFile_Temp.print(",");
+  dataFile_Temp.print(RDQ_AcZMed,4);
+  dataFile_Temp.println("");
+  // END OF DATASTRING
+
+  dataFile_Temp.flush();
+
+//  PostDataDev();
+  
+  delay(1000); // delay is measured in milliseconds - 1000 ms= 1 s
 }

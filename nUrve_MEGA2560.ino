@@ -20,7 +20,7 @@
  * +-------------------------------------------------------------------------+
  * | CONTACT INFORMATION:                                                    |
  * | Primary author:  Nadir Ait-Laoussine                                    |
- * | Primary contact: nadir at urbanmobilesensots dot com                    |
+ * | Primary contact: nadir at urbanmobilesensors dot com                    |
  * | Contributors:    Andrew Leonard                                         |
  * |                  Mickey Chea                                            |
  * |                  Chris Templeman                                        |

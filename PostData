@@ -1,0 +1,10 @@
+/*
+ * This script is designed to help post data to Sparkfun's data stream
+ * Process:
+ * - This is a function that's called every XX interval
+ * - Turn on FONA
+ * - Wait 5 seconds
+ * - Check Signal Strength
+ * - If Strength is good enough (and we're connected to the network) then...
+ *    - Read data from SD Card and upload to sparkfun (how do I add a whole data set and not just one row?
+ */

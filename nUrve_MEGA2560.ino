@@ -12,10 +12,18 @@
  * | Currently this code only works on Arduino MEGA based architectures.     |
  * | It can be ported over to Due based architecture, but cannot be run on   |
  * | UNO, or other boards that have 2K of SRAM.                              |
+ * |                                                                         |
+ * | Note on data sizing:                                                    |
+ * | As written, the code records data once a second and writes to an SD     |
+ * | card. We write to the master field and to a temporary file. The temp    |
+ * | is uploaded through a cellular data connection.                         |
+ * | Early testing shows that the script writes about 23.65MB a day, or      |
+ * | 710MB a month (30 days). Assumptions: writing 24/7. Therefore you need  |                    
+ * | a minimum of 2GB on the SD Card, we recommend 4GB.                      |
  * +-------------------------------------------------------------------------+
  * | STATISTICS:                                                             |
- * | Dynamic Memory:   3,478 bytes (42%) (Target: 35%)                       | 
- * | Storage Space:   32,732 bytes (12%)                                     |
+ * | Dynamic Memory:   4,673 bytes (42%) (Target: 35%)                       | 
+ * | Storage Space:   34,358 bytes (12%)                                     |
  * | Compiled for:     Arduino MEGA 2560                                     |
  * +-------------------------------------------------------------------------+
  * | CONTACT INFORMATION:                                                    |
@@ -30,15 +38,19 @@
  * |                  In addition special mentions go out to:                |
  * |                  Chip McClelland (https://www.hackster.io/chipmc)       |
  * |                  Kina Smith (http://www.kinasmith.com)                  |
- * | Build #:         24                                                     |
+ * | Build #:         25                                                     |
  * | Last update:     2015-10-08                                             |
  * +-------------------------------------------------------------------------+
  * | NEEDS                                                                   |
- * | a) Remove all serial.print - they take up SRAM | 20150919
- * | b) Calculate min/max/avg | 20150920
- * | c) Figure out how to make write to the data card faster (one string?) | 20150919
- * | d) Calculate median (more complex)
- * | e) Clean up code
+ * | + Remove all serial.print - they take up SRAM | 20150919
+ * | + Calculate min/max/avg | 20150920
+ * | + Figure out how to make write to the data card faster (one string?) | 20150919
+ * | + Calculate median (more complex)
+ * | + Clean up code
+ * | + Wrap sensing inside the loop (500 mls)
+ * | + In set up or board, go through and
+ * | + Clean up code
+ * | + Clean up code
  * +-------------------------------------------------------------------------+
  */
 /* +-------------------------------------------------------------------------+
@@ -60,14 +72,12 @@
  * | FONA DEV - IN HEAVY DEVELOPMENT                                       |
  * +-------------------------------------------------------------------------+
 */
-#define FONA_RX  50//50 //connect to FONA RX  // was 3
-#define FONA_TX  51//51 //connect to FONA TX  // was 4
-#define FONA_RST 22//22 //connect to FONA RST  // ??
-#define FONA_KEY 21// //connect to FONA KEY // was 6
-#define FONA_PS  7// //connect to FONA PS  // was 7
-int keyTime = 2000; // Time needed to turn ON or OFF the FONA
-
-
+//#define FONA_RX  50//50 //connect to FONA RX  // was 3
+//#define FONA_TX  51//51 //connect to FONA TX  // was 4
+//#define FONA_RST 22//22 //connect to FONA RST  // ??
+//#define FONA_KEY 21// //connect to FONA KEY // was 6
+//#define FONA_PS  7// //connect to FONA PS  // was 7
+//int keyTime = 2000; // Time needed to turn ON or OFF the FONA
 ///
 //String APN = "__PUT YOUR APN HERE!!__"; //Set APN for Mobile Service
 //
@@ -104,21 +114,21 @@ int keyTime = 2000; // Time needed to turn ON or OFF the FONA
  * +-------------------------------------------------------------------------+
  */
 //General vars
-int IterationCounter = 0;     // We use this for development purposes, may not need it in production
+int IterationCounter = 0;                   // We use this for development purposes, may not need it in production
 
 // DataLogger vars
-const int chipSelect = 4;     // We're using Analog 4
-File dataFile_Master;
-File dataFile_Temp;                // This is the variable name for the data file
+const int chipSelect = 4;                   // We're using Analog 4
+File dataFile_Master;                       // Master dataFile    - This is the master logfile
+File dataFile_Temp;                         // Temporary dataFile - This is a temporary logfile the variable name for the data file
 
 // GPS vars
-#define GPSECHO false
-boolean usingInterrupt = false;
-void useInterrupt(boolean); // Func prototype keeps Arduino 0023 happy
-Adafruit_GPS GPS(&Serial1); // It's on Serial 0 (RX0, TX0)
+#define GPSECHO false                       // We do not want GPS echo
+boolean usingInterrupt = false;             // We are not using interrupt
+void useInterrupt(boolean);                 // Not sure what this does, but seems to barf if we don't have it - Func prototype keeps Arduino 0023 happy
+Adafruit_GPS GPS(&Serial1);                 // TX/RX on MEGA is on 2560 (RX0, TX0)
 
 //  Sensor vars
-Adafruit_HTU21DF htu = Adafruit_HTU21DF();                                            //HTUD21DF I2C Address: 0x40 (cannot be changed)
+Adafruit_HTU21DF htu = Adafruit_HTU21DF();  //HTUD21DF I2C Address: 0x40 (cannot be changed)
 Adafruit_TSL2561_Unified  tsl = Adafruit_TSL2561_Unified(TSL2561_ADDR_FLOAT, 12345);  //TSL2561 I2C Address: 0X39 (can be changed)
 
 // Accelerometer vars
@@ -175,8 +185,8 @@ float RDQ_AcZMax = -9999;
 float RDQ_AcZMea = -9999;
 float RDQ_AcZMed = -9999;
 
-const int AMB_SND_sampleWindow = 500; // Sample window width in mS (50 mS = 20Hz)
-unsigned int AMB_SND_sample;
+const int SamplingWindow = 500; // Sample window width in mS (50 mS = 20Hz)
+unsigned int AMB_SND_sample; //??
 
 void setup() {
   // initialize serial and wait for the port to open:
@@ -303,9 +313,14 @@ void loop() {
 
    unsigned int signalMax = 0;
    unsigned int signalMin = 1024;
+   unsigned int signalTot = 0;
+   int signalAvg = 0;
+   int signalMed = 0;
+   int signalCount = 0;
+   
 
    // collect data for 50 mS
-   while (millis() - startMillis < AMB_SND_sampleWindow)
+   while (millis() - startMillis < SamplingWindow)
    {
       AMB_SND_sample = analogRead(8);
       if (AMB_SND_sample < 1024)  // toss out spurious readings
@@ -322,7 +337,16 @@ void loop() {
    }
    peakToPeak = signalMax - signalMin;  // max - min = peak-peak amplitude
    double volts = (peakToPeak * 3.3) / 1024;  // convert to volts
+   double volts_min = (signalMin * 3.3) / 1024;
+   double volts_max = (signalMax * 3.3) / 1024;
+   double volts_avg = ((signalTot/signalCount) * 3.3) / 1024;
+   double volts_med = 0; // Right now we do nothing
    AMB_Snd = volts;
+   AMB_SndMin = volts_min;  //
+   AMB_SndMax = //
+   AMB_SndMea = //
+   AMB_SndMed = AMB_SndMed; // Right now we do nothing
+
   // Output of data - For development purposes only
   /*
   Serial.print("+-------------------------------------------------------------------------+\n");
@@ -370,15 +394,7 @@ void loop() {
    * +===========================================================================================+ 
    */
   // make a string for assembling the data to log:
-  String dataString = "";
-
-/*  
- *   WE MAY NO LONGER NEED THIS AS WE'VE  DEFINED IT IN THE SETUP
- if(IterationCounter == 1) {
-    // LATER: Add check to see if the file is there
-    dataFile_Master.println("ID,DATESTAMP,TIMESTAMP,GPS_LAT,GPS_LON,GPS_Speed,GPS_SpeedMin,GPS_SpeedMax,GPS_SpeedMea,GPS_SpeedMed,GPS_Alt,GPS_Sats,GPS_Fix,GPS_Quality,AMB_Temp,AMB_TempMin,AMB_TempMax,AMB_TempMea,AMB_TempMed,AMB_Humd,AMB_HumdMin,AMB_HumdMax,AMB_HumdMea,AMB_HumdMed,AMB_Lux,AMB_LuxMin,AMB_LuxMax,AMB_LuxMea,AMB_LuxMed,AMB_Snd,AMB_SndMin,AMB_SndMax,AMB_SndMea,AMB_SndMed,RDQ_AcX,RDQ_AcXMin,RDQ_AcXMax,RDQ_AcXMea,RDQ_AcXMed,RDQ_AcY,RDQ_AcYMin,RDQ_AcYMax,RDQ_AcYMea,RDQ_AcYMed,RDQ_AcZ,RDQ_AcZMin,RDQ_AcZMax,RDQ_AcZMea,RDQ_AcZMed");
-  }
- */
+//  String dataString = "";
 
   // Build the String
 /*  
@@ -400,10 +416,8 @@ void loop() {
   
   // DATASTRING PRINTING
   dataFile_Master.print("ID: ");dataFile_Master.print(IterationCounter);dataFile_Master.print(",");
-  // START OF DATE STIME SNAFU
-  dataFile_Master.print("20");dataFile_Master.print(GPS.year, DEC);dataFile_Master.print(":");dataFile_Master.print(GPS.month, DEC);dataFile_Master.print(":");dataFile_Master.print(GPS.month, DEC);dataFile_Master.print(":");dataFile_Master.print(GPS.day, DEC);dataFile_Master.print(",");
-  dataFile_Master.print(GPS.hour, DEC); dataFile_Master.print(':');dataFile_Master.print(GPS.minute, DEC); dataFile_Master.print(':');dataFile_Master.print(GPS.seconds, DEC); dataFile_Master.print('.');dataFile_Master.print(GPS.milliseconds);dataFile_Master.print(",");
-  // END OF DATE TIME SNAFU
+  dataFile_Master.print("20");dataFile_Master.print(GPS.year, DEC);dataFile_Master.print(":");dataFile_Master.print(GPS.month, DEC);dataFile_Master.print(":");dataFile_Master.print(GPS.day, DEC);dataFile_Master.print(",");
+  dataFile_Master.print(GPS.hour, DEC); dataFile_Master.print(':');dataFile_Master.print(GPS.minute, DEC); dataFile_Master.print(':');dataFile_Master.print(GPS.seconds, DEC); dataFile_Master.print('.');dataFile_Master.print(GPS.milliseconds);dataFile_Master.print(","); 
   dataFile_Master.print(GPS_Lat,6);dataFile_Master.print(",");
   dataFile_Master.print(GPS_Lon,6);dataFile_Master.print(",");
   dataFile_Master.print(GPS_Speed,2);dataFile_Master.print(",");
@@ -458,10 +472,8 @@ void loop() {
   // THIS IS THE BACKUP LOG. THIS LOG IS WHAT GETS SENT THROUGH THE FONA
   // DATASTRING PRINTING
   dataFile_Temp.print("ID: ");dataFile_Temp.print(IterationCounter);dataFile_Temp.print(",");
-  // START OF DATE STIME SNAFU
-  dataFile_Temp.print("20");dataFile_Temp.print(GPS.year, DEC);dataFile_Temp.print(":");dataFile_Temp.print(GPS.month, DEC);dataFile_Temp.print(":");dataFile_Temp.print(GPS.month, DEC);dataFile_Temp.print(":");dataFile_Temp.print(GPS.day, DEC);dataFile_Temp.print(",");
+  dataFile_Temp.print("20");dataFile_Temp.print(GPS.year, DEC);dataFile_Temp.print(":");dataFile_Temp.print(GPS.month, DEC);dataFile_Temp.print(":");dataFile_Temp.print(GPS.day, DEC);dataFile_Temp.print(",");
   dataFile_Temp.print(GPS.hour, DEC); dataFile_Temp.print(':');dataFile_Temp.print(GPS.minute, DEC); dataFile_Temp.print(':');dataFile_Temp.print(GPS.seconds, DEC); dataFile_Temp.print('.');dataFile_Temp.print(GPS.milliseconds);dataFile_Temp.print(",");
-  // END OF DATE TIME SNAFU
   dataFile_Temp.print(GPS_Lat,6);dataFile_Temp.print(",");
   dataFile_Temp.print(GPS_Lon,6);dataFile_Temp.print(",");
   dataFile_Temp.print(GPS_Speed,2);dataFile_Temp.print(",");

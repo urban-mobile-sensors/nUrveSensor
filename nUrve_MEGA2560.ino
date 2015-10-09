@@ -22,8 +22,8 @@
  * | a minimum of 2GB on the SD Card, we recommend 4GB.                      |
  * +-------------------------------------------------------------------------+
  * | STATISTICS:                                                             |
- * | Dynamic Memory:   4,673 bytes (42%) (Target: 35%)                       | 
- * | Storage Space:   34,358 bytes (12%)                                     |
+ * | Dynamic Memory:   3,521 bytes (42%) (Target: 35%; Max: 60%)             | 
+ * | Storage Space:   34,960 bytes (13%)                                     |
  * | Compiled for:     Arduino MEGA 2560                                     |
  * +-------------------------------------------------------------------------+
  * | CONTACT INFORMATION:                                                    |
@@ -38,18 +38,17 @@
  * |                  In addition special mentions go out to:                |
  * |                  Chip McClelland (https://www.hackster.io/chipmc)       |
  * |                  Kina Smith (http://www.kinasmith.com)                  |
- * | Build #:         25                                                     |
- * | Last update:     2015-10-08                                             |
+ * | Build #:         30                                                     |
+ * | Last update:     2015-10-09                                             |
  * +-------------------------------------------------------------------------+
  * | NEEDS                                                                   |
- * | + Remove all serial.print - they take up SRAM | 20150919
- * | + Calculate min/max/avg | 20150920
+ * | NEXT VIP:
+ * | + Calculate min/max/avg for light/temp/humid/sound in same way as ADXL 
+ * | + In set up or board, go through and add basic info that we'll need
+ * | ------------------------------------------------------------------------|
+ * | + Remove all serial.print - they take up SRAM (before roll out)
  * | + Figure out how to make write to the data card faster (one string?) | 20150919
  * | + Calculate median (more complex)
- * | + Clean up code
- * | + Wrap sensing inside the loop (500 mls)
- * | + In set up or board, go through and
- * | + Clean up code
  * | + Clean up code
  * +-------------------------------------------------------------------------+
  */
@@ -135,8 +134,9 @@ Adafruit_TSL2561_Unified  tsl = Adafruit_TSL2561_Unified(TSL2561_ADDR_FLOAT, 123
 Adafruit_ADXL345_Unified accel = Adafruit_ADXL345_Unified(12345);                     // ADXL345 I2C Address: ????
 
 // Define all the variables that we're going to need:
-String GPS_Date = "0000-00-00";
-String GPS_Time = "HH:MM:SS.MS";
+String GPS_Date = "1900-01-01";
+String GPS_Time = "00:00:00.00";
+String GPS_DateTimeStamp = "1900-01-01 00:00:00.00";
 float GPS_Lat = -9999;
 float GPS_Lon = -9999;
 float GPS_Altitude = -9999;
@@ -170,18 +170,21 @@ float AMB_SndMax = -9999;
 float AMB_SndMea = -9999;
 float AMB_SndMed = -9999;
 float RDQ_AcX = -9999;
-float RDQ_AcXMin = -9999;
+float RDQ_AcXMin = 9999;
 float RDQ_AcXMax = -9999;
+float RDQ_AcXTot = 0;
 float RDQ_AcXMea = -9999;
 float RDQ_AcXMed = -9999;
 float RDQ_AcY = -9999;
-float RDQ_AcYMin = -9999;
+float RDQ_AcYMin = 9999;
 float RDQ_AcYMax = -9999;
+float RDQ_AcYTot = 0;
 float RDQ_AcYMea = -9999;
 float RDQ_AcYMed = -9999;
 float RDQ_AcZ = -9999;
-float RDQ_AcZMin = -9999;
+float RDQ_AcZMin = 9999;
 float RDQ_AcZMax = -9999;
+float RDQ_AcZTot = 0;
 float RDQ_AcZMea = -9999;
 float RDQ_AcZMed = -9999;
 
@@ -200,6 +203,9 @@ void setup() {
 //  setupAmbientSound();      // Set up Ambient Sensor 3 - Sound
   setupRoadSensor();        // Set up Road Sensor
   Serial.println("All systems go!");
+  Serial.println("PLACEHOLDER FOR FIRST RUN");
+  // FIRST RUN, SETS ALL VARS
+  Serial.println("... nothing for now");
 }
 
 // ADDITIONAL CODE
@@ -230,21 +236,15 @@ void useInterrupt(boolean v) {
   }
 }
 
-uint32_t timer = millis();
+uint32_t timer = millis(); // This is a timer
 // END OF GPS
 // END OF ADDITIONAL CODE
 
 void loop() {
   IterationCounter ++;
- Serial.print("| Iteration: #");Serial.println(IterationCounter);
-/*  
- *   
-  Serial.print("| Board Information: [TO DO]\n");
-  Serial.print("| Communication Data: [TO DO]\n");
-  Serial.print("| SSID: ");Serial.println("");
-  Serial.print("| RSSI: ");Serial.println("");
-  Serial.print("| Nets: ");Serial.println("");
-*/
+  Serial.print("| Iteration: #");Serial.println(IterationCounter);
+  //Serial.print("| Board Information: [TO DO]\n");Serial.print("| Communication Data: [TO DO]\n");Serial.print("| SSID: ");Serial.println("");Serial.print("| RSSI: ");Serial.println("");Serial.print("| Nets: ");Serial.println("");
+
   // GPS CODE
   if (! usingInterrupt) {
     // read data from the GPS in the 'main loop'
@@ -266,8 +266,8 @@ void loop() {
   if (millis() - timer > 1000) { 
     timer = millis(); // reset the timer
     if (GPS.fix) {
-//      GPS_Date = Serial.println(GPS.year);
-//      GPS_Time = "HH:MM:SS.MS";
+      GPS_DateTimeStamp = "20" + String(GPS.year) + "-" + String(GPS.month) + "-" + String(GPS.day) + " " + String(GPS.hour, DEC) + ":" + String(GPS.minute, DEC) + ":" + String(GPS.seconds, DEC) + "." + String(GPS.milliseconds);
+      // FUTURE: Timezone
       GPS_Lat = GPS.latitudeDegrees;
       GPS_Lon = GPS.longitudeDegrees;
       GPS_Speed = GPS.speed;
@@ -276,39 +276,97 @@ void loop() {
       GPS_Sats = GPS.satellites;
     }
   }
-  // STILL TO DO HERE:
-  // 1) Get Date as a single properly formatted string YYYY-MM-DD
-  // 2) Get Time as a single properly formatted string HH:MM:SS.mmm
-/*
-  Serial.print("| GPS Information:\n");
-  Serial.print("| Date: ");Serial.println(GPS_Date);
-  Serial.print("20");Serial.print(GPS.year, DEC);Serial.print(":");Serial.print(GPS.month, DEC);Serial.print(":");Serial.print(GPS.day, DEC);Serial.print(":");Serial.println(GPS.day, DEC);
-  Serial.print("| Time: ");Serial.println(GPS_Time);
-  Serial.print(GPS.hour, DEC); Serial.print(':');Serial.print(GPS.minute, DEC); Serial.print(':');Serial.print(GPS.seconds, DEC); Serial.print('.');Serial.println(GPS.milliseconds);
-  Serial.print("| Lat: ");Serial.println(GPS_Lat,6);
-  Serial.print("| Lon: ");Serial.println(GPS_Lon,6);
-   Serial.print("| Speed (knots): ");Serial.println(GPS_Speed,2);
-  Serial.print("| Altitude: ");Serial.println(GPS_Altitude,2);
-  Serial.print("| Angle: ");Serial.println(GPS_Angle,2);
-  Serial.print("| Sats: ");Serial.println(GPS_Sats,0);
-  Serial.print("| Fix: ");Serial.println(GPS.fix,2);  // TO BE DONE
-  Serial.print("| Quality: ");Serial.println(GPS.fixquality,2);  // TO BE DONE
-*/
+//  Serial.print("| GPS Information:\n");
+//  Serial.print("| DateTimestamp: ");Serial.println(GPS_DateTimeStamp);
+//  Serial.print("| Lat: ");Serial.println(GPS_Lat,6);
+//  Serial.print("| Lon: ");Serial.println(GPS_Lon,6);
+//  Serial.print("| Speed (knots): ");Serial.println(GPS_Speed,2);
+//  Serial.print("| Altitude: ");Serial.println(GPS_Altitude,2);
+//  Serial.print("| Angle: ");Serial.println(GPS_Angle,2);
+//  Serial.print("| Sats: ");Serial.println(GPS_Sats,0);
+//  Serial.print("| Fix: ");Serial.println(GPS.fix,2);  // TO BE DONE
+//  Serial.print("| Quality: ");Serial.println(GPS.fixquality,2);  // TO BE DONE
 // END OF GPS CODE
 
   // =============================================================================================
+  // BEGIN OF MEASURING
+  // =============================================================================================
+  // We are measuring everithing inside a giant loop. We basically record for 500 ms, and then right out all the values to the SD Card after this loop
+  // This applies for all ambient sensors (Temp, Humid, Light, Sound), and the Accelerometer
+
+  // Reset all variables to default values
+  RDQ_AcX = -9999; RDQ_AcXMin = 9999; RDQ_AcXMax = -9999; RDQ_AcXTot = 0; RDQ_AcXMea = -9999; RDQ_AcXMed = -9999;  //RDQ X
+  RDQ_AcY = -9999; RDQ_AcYMin = 9999; RDQ_AcYMax = -9999; RDQ_AcYTot = 0; RDQ_AcYMea = -9999; RDQ_AcYMed = -9999;  //RDQ Y
+  RDQ_AcZ = -9999; RDQ_AcZMin = 9999; RDQ_AcZMax = -9999; RDQ_AcZTot = 0; RDQ_AcZMea = -9999; RDQ_AcZMed = -9999;  //RDQ Z
+
+  
+  unsigned long startMillis= millis();  // Start of sample window
+  sensors_event_t event;  // Collect the event
+ 
+  while (millis() - startMillis < SamplingWindow) {
+    accel.getEvent(&event);
+
+    // =============================================================================================
+    // ACCELEROMTER
+    // =============================================================================================
+    // Set variables
+    RDQ_AcX = event.acceleration.x;
+    RDQ_AcY = event.acceleration.y;
+    RDQ_AcZ = event.acceleration.z;
+
+    // AcX
+    if (RDQ_AcX > RDQ_AcXMax)
+      {
+        RDQ_AcXMax = RDQ_AcX;  // We found the local max, save it!
+      }
+    if (RDQ_AcX < RDQ_AcXMin)
+      {
+        RDQ_AcXMin = RDQ_AcX;  // We found the local min, save it!
+      }
+    RDQ_AcXTot = RDQ_AcXTot + RDQ_AcX; // We're summing up all the values to get the total values for AcX, we'll use that to get the mean.
+
+    // AcY
+    if (RDQ_AcY > RDQ_AcYMax)
+      {
+        RDQ_AcYMax = RDQ_AcY;  // We found the local max, save it!
+      }
+    if (RDQ_AcY < RDQ_AcYMin)
+      {
+        RDQ_AcYMin = RDQ_AcY;  // We found the local min, save it!
+      }
+    RDQ_AcYTot = RDQ_AcYTot + RDQ_AcY; // We're summing up all the values to get the total values for AcX, we'll use that to get the mean.
+
+    // AcZ
+    if (RDQ_AcZ > RDQ_AcZMax)
+      {
+        RDQ_AcZMax = RDQ_AcZ;  // We found the local max, save it!
+      }
+    if (RDQ_AcZ < RDQ_AcZMin)
+      {
+        RDQ_AcZMin = RDQ_AcZ;  // We found the local min, save it!
+      }
+    RDQ_AcZTot = RDQ_AcZTot + RDQ_AcZ; // We're summing up all the values to get the total values for AcX, we'll use that to get the mean.
+    }
+
+    RDQ_AcXMea = RDQ_AcXTot / SamplingWindow; // Calculate mean (tot/count)
+    RDQ_AcYMea = RDQ_AcYTot / SamplingWindow; // Calculate mean (tot/count)
+    RDQ_AcZMea = RDQ_AcZTot / SamplingWindow; // Calculate mean (tot/count)
+    
+// SAMPLING WINDOW CODE DONE UP TO HERE
+ 
+// =============================================================================================
   // AMBIENT SENSORS
   // =============================================================================================
   // Ambient set temperature and humidity
   // AMB_Temp = htu.readTemperature();
   // AMB_Humd = htu.readHumidity();
   // Ambient - Set Light Values
-  sensors_event_t event;
+//  sensors_event_t event;
   // tsl.getEvent(&event);
   //if (event.light) {AMB_Lux = event.light;} else {AMB_Lux = -9998;}
 
    // Ambient - Set Sound Values
-   unsigned long startMillis= millis();  // Start of sample window
+   unsigned long AstartMillis= millis();  // Start of sample window
    unsigned int peakToPeak = 0;   // peak-to-peak level
 
    unsigned int signalMax = 0;
@@ -319,9 +377,10 @@ void loop() {
    int signalCount = 0;
    
 
-   // collect data for 50 mS
-   while (millis() - startMillis < SamplingWindow)
+   // Collect data for 500 mS - That's what SamplingWindow is set to
+   while (millis() - AstartMillis < SamplingWindow)
    {
+      // Collect Data
       AMB_SND_sample = analogRead(8);
       if (AMB_SND_sample < 1024)  // toss out spurious readings
       {
@@ -360,10 +419,10 @@ void loop() {
   // =============================================================================================
   // ACCELEROMTER CODE
   // =============================================================================================
-  accel.getEvent(&event);
-  RDQ_AcX = event.acceleration.x;
-  RDQ_AcY = event.acceleration.y;
-  RDQ_AcZ = event.acceleration.z;
+//  accel.getEvent(&event);
+//  RDQ_AcX = event.acceleration.x;
+//  RDQ_AcY = event.acceleration.y;
+//  RDQ_AcZ = event.acceleration.z;
   // Display the results (acceleration is measured in m/s^2)
  /* 
   *  
@@ -393,31 +452,11 @@ void loop() {
    *      - Check to see what exactly dataflush does. Does it push to file and write and empty variable, or does it clear session.
    * +===========================================================================================+ 
    */
-  // make a string for assembling the data to log:
-//  String dataString = "";
-
-  // Build the String
-/*  
- *   
- for (int analogPin = 0; analogPin < 3; analogPin++) {
-    int sensor = analogRead(analogPin);
-    dataString += String(sensor);
-    if (analogPin < 2) {
-      dataString += ","; 
-    }
-  }
- */
- // We need to address issues with writing the header in each file.
-
-// LEFT HERE... I HAVE TO FIGURE OUT HOW TO FORMAT THE DATE AND TIME PROPERLY
-//  String timestamp_len = sprintf(timestamp, "20%02d-%02d-%02dT%02d:%02d:%02dZ", GPS.year, GPS.month, GPS.day, GPS.hour, GPS.minute, GPS.seconds);
-//String FormattedDate = Serial.print("20");Serial.print(GPS.year, DEC);Serial.print(":");Serial.print(GPS.month, DEC);Serial.print(":");Serial.print(GPS.month, DEC);Serial.print(":");Serial.println(GPS.day, DEC);
-//  String FormattedTime = Serial.print(GPS.hour, DEC); Serial.print(':');Serial.print(GPS.minute, DEC); Serial.print(':');Serial.print(GPS.seconds, DEC); Serial.print('.');Serial.println(GPS.milliseconds);
   
   // DATASTRING PRINTING
-  dataFile_Master.print("ID: ");dataFile_Master.print(IterationCounter);dataFile_Master.print(",");
-  dataFile_Master.print("20");dataFile_Master.print(GPS.year, DEC);dataFile_Master.print(":");dataFile_Master.print(GPS.month, DEC);dataFile_Master.print(":");dataFile_Master.print(GPS.day, DEC);dataFile_Master.print(",");
-  dataFile_Master.print(GPS.hour, DEC); dataFile_Master.print(':');dataFile_Master.print(GPS.minute, DEC); dataFile_Master.print(':');dataFile_Master.print(GPS.seconds, DEC); dataFile_Master.print('.');dataFile_Master.print(GPS.milliseconds);dataFile_Master.print(","); 
+  dataFile_Master = SD.open("m_log.csv", FILE_WRITE);
+  dataFile_Master.print(IterationCounter);dataFile_Master.print(",");
+  dataFile_Master.print(GPS_DateTimeStamp);dataFile_Master.print(",");
   dataFile_Master.print(GPS_Lat,6);dataFile_Master.print(",");
   dataFile_Master.print(GPS_Lon,6);dataFile_Master.print(",");
   dataFile_Master.print(GPS_Speed,2);dataFile_Master.print(",");
@@ -466,14 +505,14 @@ void loop() {
   dataFile_Master.print(RDQ_AcZMed,4);
   dataFile_Master.println("");
   // END OF DATASTRING
-
   dataFile_Master.flush();
+  dataFile_Master.close();
 
   // THIS IS THE BACKUP LOG. THIS LOG IS WHAT GETS SENT THROUGH THE FONA
   // DATASTRING PRINTING
+  dataFile_Temp = SD.open("t_log.csv", FILE_WRITE);
   dataFile_Temp.print("ID: ");dataFile_Temp.print(IterationCounter);dataFile_Temp.print(",");
-  dataFile_Temp.print("20");dataFile_Temp.print(GPS.year, DEC);dataFile_Temp.print(":");dataFile_Temp.print(GPS.month, DEC);dataFile_Temp.print(":");dataFile_Temp.print(GPS.day, DEC);dataFile_Temp.print(",");
-  dataFile_Temp.print(GPS.hour, DEC); dataFile_Temp.print(':');dataFile_Temp.print(GPS.minute, DEC); dataFile_Temp.print(':');dataFile_Temp.print(GPS.seconds, DEC); dataFile_Temp.print('.');dataFile_Temp.print(GPS.milliseconds);dataFile_Temp.print(",");
+  dataFile_Temp.print(GPS_DateTimeStamp);dataFile_Temp.print(",");
   dataFile_Temp.print(GPS_Lat,6);dataFile_Temp.print(",");
   dataFile_Temp.print(GPS_Lon,6);dataFile_Temp.print(",");
   dataFile_Temp.print(GPS_Speed,2);dataFile_Temp.print(",");
@@ -524,8 +563,9 @@ void loop() {
   // END OF DATASTRING
 
   dataFile_Temp.flush();
+  dataFile_Temp.close();
 
 //  PostDataDev();
   
-  delay(1000); // delay is measured in milliseconds - 1000 ms= 1 s
+  delay(700); // delay is measured in milliseconds - 1000 ms= 1 s
 }

@@ -341,10 +341,10 @@ void loop() {
    double volts_max = (signalMax * 3.3) / 1024;
    double volts_avg = ((signalTot/signalCount) * 3.3) / 1024;
    double volts_med = 0; // Right now we do nothing
-   AMB_Snd = volts;
-   AMB_SndMin = volts_min;  //
-   AMB_SndMax = //
-   AMB_SndMea = //
+   AMB_Snd = volts;         // Spot Sound
+   AMB_SndMin = volts_min;  // 
+   AMB_SndMax = volts_max;  //
+   AMB_SndMea = volts_avg;  //
    AMB_SndMed = AMB_SndMed; // Right now we do nothing
 
   // Output of data - For development purposes only
